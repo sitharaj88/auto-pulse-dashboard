@@ -7,8 +7,8 @@ import { generateMockData } from "../../services/mockDataService";
 export const fetchSalesData = createAsyncThunk(
   "dashboard/fetchSalesData",
   async (filters?: Partial<FilterOptions>) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Simulate realistic API response time (200ms instead of 1000ms)
+    await new Promise((resolve) => setTimeout(resolve, 200));
     return generateMockData(filters);
   }
 );

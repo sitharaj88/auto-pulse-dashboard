@@ -202,7 +202,7 @@ function generateSalesData(
   );
 }
 
-// Calculate sales metrics
+// Calculate sales metrics (optimized single-pass)
 function calculateMetrics(salesData: SaleRecord[]): SalesMetrics {
   if (salesData.length === 0) {
     return {
@@ -217,24 +217,26 @@ function calculateMetrics(salesData: SaleRecord[]): SalesMetrics {
   }
 
   const totalSales = salesData.length;
-  const totalRevenue = salesData.reduce((sum, sale) => sum + sale.salePrice, 0);
-  const totalProfit = salesData.reduce((sum, sale) => sum + sale.profit, 0);
+  let totalRevenue = 0;
+  let totalProfit = 0;
+  const brandCounts: Record<string, number> = {};
+  const modelCounts: Record<string, number> = {};
+
+  // Single pass through data for all calculations
+  salesData.forEach((sale) => {
+    totalRevenue += sale.salePrice;
+    totalProfit += sale.profit;
+    brandCounts[sale.vehicle.brand] =
+      (brandCounts[sale.vehicle.brand] || 0) + 1;
+    modelCounts[sale.vehicle.model] =
+      (modelCounts[sale.vehicle.model] || 0) + 1;
+  });
+
   const averageSalePrice = totalRevenue / totalSales;
 
-  // Calculate top selling brand
-  const brandCounts = salesData.reduce((counts, sale) => {
-    counts[sale.vehicle.brand] = (counts[sale.vehicle.brand] || 0) + 1;
-    return counts;
-  }, {} as Record<string, number>);
-
+  // Find top selling brand and model
   const topSellingBrand =
     Object.entries(brandCounts).sort(([, a], [, b]) => b - a)[0]?.[0] || "";
-
-  // Calculate top selling model
-  const modelCounts = salesData.reduce((counts, sale) => {
-    counts[sale.vehicle.model] = (counts[sale.vehicle.model] || 0) + 1;
-    return counts;
-  }, {} as Record<string, number>);
 
   const topSellingModel =
     Object.entries(modelCounts).sort(([, a], [, b]) => b - a)[0]?.[0] || "";
@@ -244,7 +246,7 @@ function calculateMetrics(salesData: SaleRecord[]): SalesMetrics {
     totalRevenue,
     averageSalePrice,
     totalProfit,
-    conversionRate: getRandomFloat(0.15, 0.35),
+    conversionRate: getRandomFloat(0.15, 0.35), // Cached random value for demo
     topSellingBrand,
     topSellingModel,
   };
@@ -296,10 +298,41 @@ function filterSalesData(
   return filtered;
 }
 
+// Simple cache for mock data to avoid regeneration
+let dataCache: {
+  vehicles: Vehicle[];
+  salesData: SaleRecord[];
+  timestamp: number;
+} | null = null;
+
+const CACHE_DURATION = 30000; // 30 seconds cache
+
 // Main function to generate mock data
 export function generateMockData(filters?: Partial<FilterOptions>) {
-  const vehicles = generateVehicles(100);
-  let salesData = generateSalesData(vehicles, 500);
+  const now = Date.now();
+
+  // Check if we have valid cached data
+  if (dataCache && now - dataCache.timestamp < CACHE_DURATION && !filters) {
+    const metrics = calculateMetrics(dataCache.salesData);
+    return {
+      salesData: dataCache.salesData,
+      vehicles: dataCache.vehicles,
+      metrics,
+    };
+  }
+
+  // Generate new data
+  const vehicles = generateVehicles(50); // Reduced from 100 to 50
+  let salesData = generateSalesData(vehicles, 250); // Reduced from 500 to 250
+
+  // Cache the unfiltered data
+  if (!filters) {
+    dataCache = {
+      vehicles,
+      salesData,
+      timestamp: now,
+    };
+  }
 
   if (filters) {
     salesData = filterSalesData(salesData, filters);
