@@ -1,0 +1,23 @@
+{
+  "name": "AutoPulse Dashboard",
+  "short_name": "AutoPulse",
+  "description": "Modern Car & Bike Sales Analytics Platform",
+  "theme_color": "#1976d2",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/autopulse-favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "16x16",
+      "type": "image/svg+xml"
+    }
+  ]
+}

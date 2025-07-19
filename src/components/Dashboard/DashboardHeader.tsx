@@ -11,9 +11,8 @@ import {
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import LogoutIcon from "@mui/icons-material/Logout";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import CarIcon from "@mui/icons-material/DirectionsCar";
-import BikeIcon from "@mui/icons-material/TwoWheeler";
+import SpeedIcon from "@mui/icons-material/Speed";
+import PulseIcon from "@mui/icons-material/ShowChart";
 import AccountCircle from "@mui/icons-material/AccountCircle";
 import { useAppDispatch } from "../../store/hooks";
 import { logout } from "../../store/slices/authSlice";
@@ -55,12 +54,32 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ user }) => {
     <StyledAppBar position="sticky" elevation={0}>
       <Toolbar sx={{ px: { xs: 2, sm: 3 } }}>
         <BrandSection sx={{ flexGrow: 1 }}>
-          <DashboardIcon
-            sx={{ fontSize: { xs: 24, sm: 32 }, color: "white" }}
-          />
-          <CarIcon sx={{ fontSize: { xs: 20, sm: 28 }, color: "white" }} />
-          <BikeIcon sx={{ fontSize: { xs: 20, sm: 28 }, color: "white" }} />
-          <Box ml={1}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              background: "rgba(255, 255, 255, 0.1)",
+              borderRadius: "12px",
+              padding: "8px 12px",
+              backdropFilter: "blur(10px)",
+            }}
+          >
+            <SpeedIcon
+              sx={{
+                fontSize: { xs: 28, sm: 36 },
+                color: "#FFD700",
+                mr: 0.5,
+              }}
+            />
+            <PulseIcon
+              sx={{
+                fontSize: { xs: 24, sm: 30 },
+                color: "#00E676",
+                transform: "rotate(-15deg)",
+              }}
+            />
+          </Box>
+          <Box ml={2}>
             <Typography
               variant="h5"
               component="h1"
@@ -68,6 +87,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ user }) => {
               color="white"
               sx={{
                 fontSize: { xs: "1.25rem", sm: "1.5rem", md: "2rem" },
+                textShadow: "0 2px 4px rgba(0,0,0,0.3)",
               }}
             >
               AutoPulse Dashboard

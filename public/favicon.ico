@@ -1,0 +1,38 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle with gradient -->
+  <defs>
+    <radialGradient id="bgGrad" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" style="stop-color:#1976d2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0d47a1;stop-opacity:1" />
+    </radialGradient>
+    <linearGradient id="pulseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF9800;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="speedGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00E676;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00C853;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="24" cy="24" r="24" fill="url(#bgGrad)"/>
+  
+  <!-- Speedometer arc -->
+  <path d="M 12 24 A 12 12 0 1 1 36 24" stroke="url(#speedGrad)" stroke-width="3" fill="none" stroke-linecap="round"/>
+  
+  <!-- Speedometer needle/pointer -->
+  <path d="M 24 24 L 33 18" stroke="url(#pulseGrad)" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Center dot -->
+  <circle cx="24" cy="24" r="3" fill="white"/>
+  
+  <!-- Pulse line effect -->
+  <path d="M 6 30 L 10 30 L 13 24 L 16 36 L 19 12 L 22 30 L 25 30" stroke="url(#speedGrad)" stroke-width="2" fill="none" stroke-linecap="round"/>
+  
+  <!-- Small decorative elements -->
+  <circle cx="30" cy="30" r="1.5" fill="rgba(255,215,0,0.7)"/>
+  <circle cx="18" cy="18" r="1.5" fill="rgba(255,215,0,0.7)"/>
+  <circle cx="36" cy="24" r="1.5" fill="rgba(0,230,118,0.7)"/>
+  <circle cx="12" cy="24" r="1.5" fill="rgba(0,230,118,0.7)"/>
+</svg>
