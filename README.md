@@ -9,7 +9,7 @@ A modern, comprehensive analytics dashboard for car and bike sales built with Re
 - **Material-UI (MUI)** - Comprehensive component library for responsive design
 - **Redux Toolkit** - State management for authentication and dashboard data
 - **React Router** - Client-side routing with protected routes
-- **Recharts** - Interactive charts and data visualizations
+- **Chart.js with React-Chartjs-2** - Professional interactive charts and data visualizations
 - **Vite** - Fast development build tool
 
 ### 📊 Dashboard Capabilities

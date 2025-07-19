@@ -17,7 +17,7 @@ export interface SaleRecord {
   id: string;
   vehicleId: string;
   vehicle: Vehicle;
-  saleDate: Date;
+  saleDate: string; // Changed to string for Redux serialization
   salePrice: number;
   salesPersonId: string;
   salesPersonName: string;

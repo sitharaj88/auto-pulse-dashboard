@@ -46,8 +46,9 @@ const DataTable: React.FC<DataTableProps> = ({ salesData }) => {
     }).format(value);
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString("en-US", {
+  const formatDate = (date: string | Date) => {
+    const dateObj = typeof date === "string" ? new Date(date) : date;
+    return dateObj.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",

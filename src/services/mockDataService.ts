@@ -176,7 +176,7 @@ function generateSalesData(
       id: generateUUID(),
       vehicleId: vehicle.id,
       vehicle,
-      saleDate: getRandomDate(new Date("2024-01-01"), new Date()),
+      saleDate: getRandomDate(new Date("2024-01-01"), new Date()).toISOString(),
       salePrice,
       salesPersonId: generateUUID(),
       salesPersonName: `${getRandomElement(FIRST_NAMES)} ${getRandomElement(
@@ -197,7 +197,9 @@ function generateSalesData(
     salesData.push(saleRecord);
   }
 
-  return salesData.sort((a, b) => b.saleDate.getTime() - a.saleDate.getTime());
+  return salesData.sort(
+    (a, b) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime()
+  );
 }
 
 // Calculate sales metrics
@@ -274,11 +276,13 @@ function filterSalesData(
   }
 
   if (filters.dateRange?.startDate && filters.dateRange?.endDate) {
-    filtered = filtered.filter(
-      (sale) =>
-        sale.saleDate >= filters.dateRange!.startDate! &&
-        sale.saleDate <= filters.dateRange!.endDate!
-    );
+    filtered = filtered.filter((sale) => {
+      const saleDate = new Date(sale.saleDate);
+      return (
+        saleDate >= filters.dateRange!.startDate! &&
+        saleDate <= filters.dateRange!.endDate!
+      );
+    });
   }
 
   if (filters.priceRange) {

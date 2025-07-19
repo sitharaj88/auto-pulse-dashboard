@@ -1,234 +1,400 @@
-import React from "react";
-import { Card, CardContent, Typography, Grid } from "@mui/material";
+import React, { useMemo } from "react";
+import { Grid, Card, CardContent, Typography, Box } from "@mui/material";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Title,
   Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-} from "recharts";
+  Legend,
+  Filler,
+  Colors,
+} from "chart.js";
+import { Bar, Line, Doughnut } from "react-chartjs-2";
 import type { SaleRecord } from "../../types";
+
+// Register Chart.js components - ensure all components are registered
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+  Colors
+);
 
 interface ChartsSectionProps {
   salesData: SaleRecord[];
 }
 
-const COLORS = [
-  "#1976d2",
-  "#dc004e",
-  "#2e7d32",
-  "#ed6c02",
-  "#9c27b0",
-  "#d32f2f",
-];
+// Chart.js default options for consistent styling
+const defaultChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: "top" as const,
+      labels: {
+        usePointStyle: true,
+        padding: 20,
+        font: {
+          size: 12,
+        },
+      },
+    },
+    tooltip: {
+      backgroundColor: "rgba(0, 0, 0, 0.8)",
+      titleColor: "#fff",
+      bodyColor: "#fff",
+      cornerRadius: 8,
+      padding: 12,
+    },
+  },
+  animation: {
+    duration: 1000,
+  },
+};
 
 const ChartsSection: React.FC<ChartsSectionProps> = ({ salesData }) => {
-  // Prepare data for charts
-  const salesByMonth = React.useMemo(() => {
+  // Monthly Sales Volume Data
+  const salesByMonth = useMemo(() => {
     const monthlyData: { [key: string]: number } = {};
 
     salesData.forEach((sale) => {
-      const month = sale.saleDate.toLocaleDateString("en-US", {
-        month: "short",
+      const saleDate = new Date(sale.saleDate);
+      const month = saleDate.toLocaleDateString("en-US", {
         year: "numeric",
+        month: "short",
       });
       monthlyData[month] = (monthlyData[month] || 0) + 1;
     });
 
-    return Object.entries(monthlyData)
-      .map(([month, sales]) => ({ month, sales }))
-      .sort(
-        (a, b) => new Date(a.month).getTime() - new Date(b.month).getTime()
-      );
+    const labels = Object.keys(monthlyData).sort(
+      (a, b) => new Date(a).getTime() - new Date(b).getTime()
+    );
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: "Sales Volume",
+          data: labels.map((month) => monthlyData[month]),
+          backgroundColor: "rgba(25, 118, 210, 0.8)",
+          borderColor: "rgba(25, 118, 210, 1)",
+          borderWidth: 2,
+          borderRadius: 8,
+          borderSkipped: false,
+        },
+      ],
+    };
   }, [salesData]);
 
-  const salesByType = React.useMemo(() => {
-    const typeData = salesData.reduce((acc, sale) => {
+  // Vehicle Type Distribution
+  const salesByType = useMemo(() => {
+    const typeData: { [key: string]: number } = {};
+
+    salesData.forEach((sale) => {
       const type = sale.vehicle.type === "car" ? "Cars" : "Bikes";
-      acc[type] = (acc[type] || 0) + 1;
-      return acc;
-    }, {} as { [key: string]: number });
+      typeData[type] = (typeData[type] || 0) + 1;
+    });
 
-    return Object.entries(typeData).map(([name, value]) => ({ name, value }));
+    return {
+      labels: Object.keys(typeData),
+      datasets: [
+        {
+          data: Object.values(typeData),
+          backgroundColor: ["rgba(25, 118, 210, 0.8)", "rgba(220, 0, 78, 0.8)"],
+          borderColor: ["rgba(25, 118, 210, 1)", "rgba(220, 0, 78, 1)"],
+          borderWidth: 3,
+          hoverOffset: 20,
+        },
+      ],
+    };
   }, [salesData]);
 
-  const revenueByBrand = React.useMemo(() => {
-    const brandData: { [key: string]: number } = {};
+  // Revenue by Brand (Top 8)
+  const revenueByBrand = useMemo(() => {
+    const brandRevenue: { [key: string]: number } = {};
 
     salesData.forEach((sale) => {
       const brand = sale.vehicle.brand;
-      brandData[brand] = (brandData[brand] || 0) + sale.salePrice;
+      brandRevenue[brand] = (brandRevenue[brand] || 0) + sale.salePrice;
     });
 
-    return Object.entries(brandData)
-      .map(([brand, revenue]) => ({ brand, revenue }))
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 8); // Top 8 brands
+    const sortedBrands = Object.entries(brandRevenue)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 8);
+
+    const labels = sortedBrands.map(([brand]) => brand);
+    const data = sortedBrands.map(([, revenue]) => revenue);
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: "Revenue ($)",
+          data,
+          backgroundColor: "rgba(220, 0, 78, 0.8)",
+          borderColor: "rgba(220, 0, 78, 1)",
+          borderWidth: 2,
+          borderRadius: 8,
+          borderSkipped: false,
+        },
+      ],
+    };
   }, [salesData]);
 
-  const monthlyRevenue = React.useMemo(() => {
+  // Monthly Revenue Trend
+  const monthlyRevenue = useMemo(() => {
     const monthlyData: { [key: string]: number } = {};
 
     salesData.forEach((sale) => {
-      const month = sale.saleDate.toLocaleDateString("en-US", {
-        month: "short",
+      const saleDate = new Date(sale.saleDate);
+      const month = saleDate.toLocaleDateString("en-US", {
         year: "numeric",
+        month: "short",
       });
       monthlyData[month] = (monthlyData[month] || 0) + sale.salePrice;
     });
 
-    return Object.entries(monthlyData)
-      .map(([month, revenue]) => ({ month, revenue }))
-      .sort(
-        (a, b) => new Date(a.month).getTime() - new Date(b.month).getTime()
-      );
+    const labels = Object.keys(monthlyData).sort(
+      (a, b) => new Date(a).getTime() - new Date(b).getTime()
+    );
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: "Revenue ($)",
+          data: labels.map((month) => monthlyData[month]),
+          borderColor: "rgba(46, 125, 50, 1)",
+          backgroundColor: "rgba(46, 125, 50, 0.1)",
+          borderWidth: 4,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: "rgba(46, 125, 50, 1)",
+          pointBorderColor: "#fff",
+          pointBorderWidth: 3,
+          pointRadius: 6,
+          pointHoverRadius: 8,
+        },
+      ],
+    };
   }, [salesData]);
 
   return (
     <Grid container spacing={{ xs: 2, sm: 3 }}>
       {/* Monthly Sales Chart */}
       <Grid item xs={12} lg={6}>
-        <Card>
-          <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+        <Card sx={{ height: "400px" }}>
+          <CardContent
+            sx={{
+              p: { xs: 2, sm: 3 },
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
             <Typography
               variant="h6"
               gutterBottom
               sx={{ fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
             >
-              Monthly Sales Volume
+              📊 Monthly Sales Volume
             </Typography>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={salesByMonth}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fontSize: 12 }}
-                  interval={"preserveStartEnd"}
-                />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Bar dataKey="sales" fill="#1976d2" />
-              </BarChart>
-            </ResponsiveContainer>
+            <Box sx={{ flex: 1, position: "relative", minHeight: 0 }}>
+              <Bar
+                key="monthly-sales-chart"
+                data={salesByMonth}
+                options={{
+                  ...defaultChartOptions,
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      grid: {
+                        color: "rgba(0, 0, 0, 0.1)",
+                      },
+                      ticks: {
+                        font: { size: 11 },
+                      },
+                    },
+                    x: {
+                      grid: {
+                        display: false,
+                      },
+                      ticks: {
+                        font: { size: 11 },
+                        maxRotation: 45,
+                      },
+                    },
+                  },
+                }}
+              />
+            </Box>
           </CardContent>
         </Card>
       </Grid>
 
       {/* Vehicle Type Distribution */}
       <Grid item xs={12} lg={6}>
-        <Card>
-          <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+        <Card sx={{ height: "400px" }}>
+          <CardContent
+            sx={{
+              p: { xs: 2, sm: 3 },
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
             <Typography
               variant="h6"
               gutterBottom
               sx={{ fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
             >
-              Sales by Vehicle Type
+              🚗 Sales by Vehicle Type
             </Typography>
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={salesByType}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) =>
-                    `${name} ${(percent * 100).toFixed(0)}%`
-                  }
-                  outerRadius={60}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {salesByType.map((_, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            <Box sx={{ flex: 1, position: "relative", minHeight: 0 }}>
+              <Doughnut
+                key="vehicle-type-chart"
+                data={salesByType}
+                options={{
+                  ...defaultChartOptions,
+                  cutout: "60%",
+                  plugins: {
+                    ...defaultChartOptions.plugins,
+                    legend: {
+                      ...defaultChartOptions.plugins.legend,
+                      position: "bottom" as const,
+                    },
+                  },
+                }}
+              />
+            </Box>
           </CardContent>
         </Card>
       </Grid>
 
       {/* Revenue by Brand */}
       <Grid item xs={12} lg={6}>
-        <Card>
-          <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+        <Card sx={{ height: "400px" }}>
+          <CardContent
+            sx={{
+              p: { xs: 2, sm: 3 },
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
             <Typography
               variant="h6"
               gutterBottom
               sx={{ fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
             >
-              Revenue by Brand
+              🏆 Top Brands by Revenue
             </Typography>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={revenueByBrand} layout="horizontal">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" tick={{ fontSize: 11 }} />
-                <YAxis
-                  dataKey="brand"
-                  type="category"
-                  width={60}
-                  tick={{ fontSize: 11 }}
-                />
-                <Tooltip
-                  formatter={(value: number) => [
-                    `$${value.toLocaleString()}`,
-                    "Revenue",
-                  ]}
-                />
-                <Bar dataKey="revenue" fill="#dc004e" />
-              </BarChart>
-            </ResponsiveContainer>
+            <Box sx={{ flex: 1, position: "relative", minHeight: 0 }}>
+              <Bar
+                key="brand-revenue-chart"
+                data={revenueByBrand}
+                options={{
+                  ...defaultChartOptions,
+                  indexAxis: "y" as const,
+                  scales: {
+                    x: {
+                      beginAtZero: true,
+                      grid: {
+                        color: "rgba(0, 0, 0, 0.1)",
+                      },
+                      ticks: {
+                        font: { size: 10 },
+                        callback: function (value) {
+                          return new Intl.NumberFormat("en-US", {
+                            style: "currency",
+                            currency: "USD",
+                            minimumFractionDigits: 0,
+                          }).format(value as number);
+                        },
+                      },
+                    },
+                    y: {
+                      grid: {
+                        display: false,
+                      },
+                      ticks: {
+                        font: { size: 11 },
+                      },
+                    },
+                  },
+                }}
+              />
+            </Box>
           </CardContent>
         </Card>
       </Grid>
 
       {/* Monthly Revenue Trend */}
       <Grid item xs={12} lg={6}>
-        <Card>
-          <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+        <Card sx={{ height: "400px" }}>
+          <CardContent
+            sx={{
+              p: { xs: 2, sm: 3 },
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
             <Typography
               variant="h6"
               gutterBottom
               sx={{ fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
             >
-              Monthly Revenue Trend
+              📈 Monthly Revenue Trend
             </Typography>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={monthlyRevenue}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fontSize: 12 }}
-                  interval={"preserveStartEnd"}
-                />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip
-                  formatter={(value: number) => [
-                    `$${value.toLocaleString()}`,
-                    "Revenue",
-                  ]}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#2e7d32"
-                  strokeWidth={3}
-                  dot={{ fill: "#2e7d32", r: 4 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <Box sx={{ flex: 1, position: "relative", minHeight: 0 }}>
+              <Line
+                key="monthly-revenue-chart"
+                data={monthlyRevenue}
+                options={{
+                  ...defaultChartOptions,
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      grid: {
+                        color: "rgba(0, 0, 0, 0.1)",
+                      },
+                      ticks: {
+                        font: { size: 11 },
+                        callback: function (value) {
+                          return new Intl.NumberFormat("en-US", {
+                            style: "currency",
+                            currency: "USD",
+                            minimumFractionDigits: 0,
+                          }).format(value as number);
+                        },
+                      },
+                    },
+                    x: {
+                      grid: {
+                        display: false,
+                      },
+                      ticks: {
+                        font: { size: 11 },
+                        maxRotation: 45,
+                      },
+                    },
+                  },
+                }}
+              />
+            </Box>
           </CardContent>
         </Card>
       </Grid>
