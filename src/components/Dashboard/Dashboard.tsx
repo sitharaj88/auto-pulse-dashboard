@@ -1,48 +1,172 @@
-import React, { useEffect } from "react";
-import { Container, Box, CircularProgress, Alert } from "@mui/material";
+import React, { useEffect, useState } from "react";
+import {
+  Container,
+  Box,
+  CircularProgress,
+  Alert,
+  IconButton,
+  useTheme,
+  useMediaQuery,
+  AppBar,
+  Toolbar,
+  Typography,
+} from "@mui/material";
+import { Menu as MenuIcon } from "@mui/icons-material";
 import { styled } from "@mui/material/styles";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { fetchSalesData } from "../../store/slices/dashboardSlice";
-import DashboardHeader from "./DashboardHeader";
+import SideDrawer from "../common/SideDrawer";
+import AdvancedFilters from "./AdvancedFilters";
 import MetricsCards from "./MetricsCards";
 import ChartsSection from "./ChartsSection";
 import DataTable from "./DataTable";
 
-const DashboardContainer = styled(Container)(({ theme }) => ({
-  paddingTop: theme.spacing(2),
-  paddingBottom: theme.spacing(3),
-  paddingLeft: theme.spacing(2),
-  paddingRight: theme.spacing(2),
-  [theme.breakpoints.up("sm")]: {
-    paddingLeft: theme.spacing(3),
-    paddingRight: theme.spacing(3),
-  },
+const DRAWER_WIDTH = 280;
+const COLLAPSED_DRAWER_WIDTH = 64;
+
+const Main = styled("main", {
+  shouldForwardProp: (prop) => prop !== "open" && prop !== "collapsed",
+})<{
+  open?: boolean;
+  collapsed?: boolean;
+}>(({ theme, collapsed }) => ({
+  flexGrow: 1,
+  padding: theme.spacing(3),
+  transition: theme.transitions.create("margin", {
+    easing: theme.transitions.easing.sharp,
+    duration: theme.transitions.duration.enteringScreen,
+  }),
+  marginLeft: 0,
   [theme.breakpoints.up("md")]: {
-    paddingTop: theme.spacing(3),
-    paddingLeft: theme.spacing(4),
-    paddingRight: theme.spacing(4),
+    marginLeft: collapsed ? COLLAPSED_DRAWER_WIDTH : DRAWER_WIDTH,
   },
-  [theme.breakpoints.up("lg")]: {
-    paddingTop: theme.spacing(4),
-    paddingLeft: theme.spacing(6),
-    paddingRight: theme.spacing(6),
+  [theme.breakpoints.down("md")]: {
+    marginLeft: 0,
+    padding: theme.spacing(2),
   },
-  [theme.breakpoints.up("xl")]: {
-    paddingLeft: theme.spacing(8),
-    paddingRight: theme.spacing(8),
+  minHeight: "100vh",
+  backgroundColor: "transparent",
+}));
+
+const StyledAppBar = styled(AppBar, {
+  shouldForwardProp: (prop) => prop !== "collapsed" && prop !== "drawerOpen",
+})<{
+  collapsed?: boolean;
+  drawerOpen?: boolean;
+}>(({ theme, collapsed }) => ({
+  zIndex: theme.zIndex.drawer + 1,
+  transition: theme.transitions.create(["width", "margin"], {
+    easing: theme.transitions.easing.sharp,
+    duration: theme.transitions.duration.leavingScreen,
+  }),
+  background:
+    "linear-gradient(135deg, rgba(25, 118, 210, 0.95) 0%, rgba(220, 0, 78, 0.95) 100%)",
+  backdropFilter: "blur(20px)",
+  borderBottom: `1px solid ${theme.palette.divider}`,
+  [theme.breakpoints.up("md")]: {
+    width: `calc(100% - ${
+      collapsed ? COLLAPSED_DRAWER_WIDTH : DRAWER_WIDTH
+    }px)`,
+    marginLeft: collapsed ? COLLAPSED_DRAWER_WIDTH : DRAWER_WIDTH,
+    transition: theme.transitions.create(["width", "margin"], {
+      easing: theme.transitions.easing.easeOut,
+      duration: theme.transitions.duration.enteringScreen,
+    }),
+  },
+  [theme.breakpoints.down("md")]: {
+    width: "100%",
+    marginLeft: 0,
   },
 }));
 
 const Dashboard: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { salesData, metrics, isLoading, error } = useAppSelector(
+  const { salesData, metrics, filters, isLoading, error } = useAppSelector(
     (state) => state.dashboard
   );
   const { user } = useAppSelector((state) => state.auth);
 
+  const [selectedView, setSelectedView] = useState<string>("overview");
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [drawerCollapsed, setDrawerCollapsed] = useState(false);
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
   useEffect(() => {
-    dispatch(fetchSalesData());
-  }, [dispatch]);
+    dispatch(fetchSalesData(filters));
+  }, [dispatch, filters]);
+
+  const handleDrawerToggle = () => {
+    setMobileDrawerOpen(!mobileDrawerOpen);
+  };
+
+  const handleDrawerCollapse = (collapsed: boolean) => {
+    setDrawerCollapsed(collapsed);
+  };
+
+  const handleViewChange = (view: string) => {
+    setSelectedView(view);
+  };
+
+  const renderAnalyticsContent = () => {
+    switch (selectedView) {
+      case "overview":
+        return (
+          <>
+            <Box sx={{ mb: 3 }}>
+              <MetricsCards metrics={metrics} />
+            </Box>
+            <Box sx={{ mb: 3 }}>
+              <ChartsSection salesData={salesData} />
+            </Box>
+            <Box sx={{ mb: 3 }}>
+              <DataTable salesData={salesData} />
+            </Box>
+          </>
+        );
+      case "sales-trends":
+        return (
+          <>
+            <Box sx={{ mb: 3 }}>
+              <MetricsCards metrics={metrics} />
+            </Box>
+            <Box sx={{ mb: 3 }}>
+              <ChartsSection salesData={salesData} />
+            </Box>
+          </>
+        );
+      case "performance":
+        return (
+          <Box sx={{ mb: 3 }}>
+            <MetricsCards metrics={metrics} />
+          </Box>
+        );
+      case "data-table":
+        return (
+          <Box sx={{ mb: 3 }}>
+            <DataTable salesData={salesData} />
+          </Box>
+        );
+      case "detailed-charts":
+        return (
+          <Box sx={{ mb: 3 }}>
+            <ChartsSection salesData={salesData} />
+          </Box>
+        );
+      default:
+        return (
+          <>
+            <Box sx={{ mb: 3 }}>
+              <MetricsCards metrics={metrics} />
+            </Box>
+            <Box sx={{ mb: 3 }}>
+              <ChartsSection salesData={salesData} />
+            </Box>
+          </>
+        );
+    }
+  };
 
   if (isLoading) {
     return (
@@ -68,36 +192,76 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <Box sx={{ backgroundColor: "#f8fafc", minHeight: "100vh" }}>
-      <DashboardHeader user={user} />
+    <Box
+      sx={{ display: "flex", backgroundColor: "#f8fafc", minHeight: "100vh" }}
+    >
+      {/* App Bar */}
+      <StyledAppBar position="fixed" collapsed={drawerCollapsed}>
+        <Toolbar>
+          <IconButton
+            color="inherit"
+            aria-label="toggle drawer"
+            onClick={handleDrawerToggle}
+            edge="start"
+            sx={{
+              mr: 2,
+              display: { xs: "inline-flex", md: "none" },
+            }}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Typography
+            variant="h6"
+            noWrap
+            component="div"
+            sx={{
+              flexGrow: 1,
+              fontSize: { xs: "1rem", sm: "1.25rem" },
+            }}
+          >
+            AutoPulse Dashboard -{" "}
+            {selectedView
+              .replace("-", " ")
+              .replace(/\b\w/g, (l) => l.toUpperCase())}
+          </Typography>
+          {user && (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  display: { xs: "none", sm: "block" },
+                  fontSize: { sm: "0.875rem", md: "0.875rem" },
+                }}
+              >
+                Welcome, {user.firstName} {user.lastName}
+              </Typography>
+            </Box>
+          )}
+        </Toolbar>
+      </StyledAppBar>
 
-      <DashboardContainer maxWidth={false} disableGutters>
-        <Box
-          sx={{
-            maxWidth: {
-              xs: "100%",
-              sm: "100%",
-              md: "1200px",
-              lg: "1400px",
-              xl: "1600px",
-            },
-            margin: "0 auto",
-            width: "100%",
-          }}
-        >
-          <Box sx={{ mt: { xs: 2, md: 3 } }}>
-            <MetricsCards metrics={metrics} />
-          </Box>
+      {/* Side Drawer */}
+      <SideDrawer
+        open={mobileDrawerOpen}
+        onClose={() => setMobileDrawerOpen(false)}
+        selectedView={selectedView}
+        onViewChange={handleViewChange}
+        onCollapse={handleDrawerCollapse}
+        isMobile={isMobile}
+      />
 
-          <Box sx={{ mt: { xs: 3, md: 4 } }}>
-            <ChartsSection salesData={salesData} />
-          </Box>
+      {/* Main Content */}
+      <Main collapsed={drawerCollapsed}>
+        <Toolbar />
 
-          <Box sx={{ mt: { xs: 3, md: 4 }, pb: { xs: 2, md: 3 } }}>
-            <DataTable salesData={salesData} />
-          </Box>
-        </Box>
-      </DashboardContainer>
+        <Container maxWidth="xl" sx={{ mt: 2 }}>
+          {/* Advanced Filters */}
+          <AdvancedFilters />
+
+          {/* Dynamic Content */}
+          {renderAnalyticsContent()}
+        </Container>
+      </Main>
     </Box>
   );
 };

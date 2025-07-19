@@ -46,8 +46,16 @@ const DataTable: React.FC<DataTableProps> = ({ salesData }) => {
     }).format(value);
   };
 
-  const formatDate = (date: string | Date) => {
+  const formatDate = (date: string | Date | null | undefined) => {
+    if (!date) return "N/A";
+
     const dateObj = typeof date === "string" ? new Date(date) : date;
+
+    // Check if the date is valid
+    if (isNaN(dateObj.getTime())) {
+      return "Invalid Date";
+    }
+
     return dateObj.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",

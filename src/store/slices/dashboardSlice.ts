@@ -51,6 +51,9 @@ const dashboardSlice = createSlice({
     setFilters: (state, action: PayloadAction<Partial<FilterOptions>>) => {
       state.filters = { ...state.filters, ...action.payload };
     },
+    updateFilters: (state, action: PayloadAction<Partial<FilterOptions>>) => {
+      state.filters = { ...state.filters, ...action.payload };
+    },
     clearFilters: (state) => {
       state.filters = initialState.filters;
     },
@@ -78,5 +81,6 @@ const dashboardSlice = createSlice({
   },
 });
 
-export const { setFilters, clearFilters, clearError } = dashboardSlice.actions;
+export const { setFilters, updateFilters, clearFilters, clearError } =
+  dashboardSlice.actions;
 export default dashboardSlice.reducer;
