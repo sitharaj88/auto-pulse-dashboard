@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Container,
   Box,
@@ -21,7 +21,6 @@ import MetricsCards from "./MetricsCards";
 import ChartsSection from "./ChartsSection";
 import DataTable from "./DataTable";
 
-const COLLAPSED_DRAWER_WIDTH = 64;
 const EXPANDED_CONTENT_MARGIN = 0; // Main content margin when drawer is expanded
 
 const Root = styled("div")({
@@ -97,7 +96,7 @@ const ContentWrapper = styled(Box)(({ theme }) => ({
 
 const Dashboard: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { salesData, metrics, filters, isLoading, error } = useAppSelector(
+  const { salesData, filters, isLoading, error } = useAppSelector(
     (state) => state.dashboard
   );
   const { user } = useAppSelector((state) => state.auth);
@@ -105,13 +104,108 @@ const Dashboard: React.FC = () => {
   const [selectedView, setSelectedView] = useState<string>("overview");
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [drawerCollapsed, setDrawerCollapsed] = useState(false);
+  const [isFiltering, setIsFiltering] = useState(false);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
+  // Client-side filtered data to prevent page refresh
+  const filteredData = useCallback(() => {
+    if (!salesData || salesData.length === 0) return [];
+
+    return salesData.filter((item) => {
+      // Filter by vehicle type
+      if (filters.vehicleType && filters.vehicleType !== "all") {
+        if (item.vehicle.type !== filters.vehicleType) return false;
+      }
+
+      // Filter by brand
+      if (filters.brand && filters.brand.trim() !== "") {
+        if (!item.vehicle.brand.toLowerCase().includes(filters.brand.toLowerCase())) return false;
+      }
+
+      // Filter by region
+      if (filters.region && filters.region.trim() !== "") {
+        if (item.region !== filters.region) return false;
+      }
+
+      // Filter by date range
+      if (filters.dateRange?.startDate || filters.dateRange?.endDate) {
+        const itemDate = new Date(item.saleDate);
+        if (filters.dateRange.startDate && itemDate < filters.dateRange.startDate) return false;
+        if (filters.dateRange.endDate && itemDate > filters.dateRange.endDate) return false;
+      }
+
+      // Filter by price range
+      if (filters.priceRange) {
+        if (item.salePrice < filters.priceRange.min || item.salePrice > filters.priceRange.max) return false;
+      }
+
+      return true;
+    });
+  }, [salesData, filters]);
+
+  // Show temporary filtering indicator
   useEffect(() => {
-    dispatch(fetchSalesData(filters));
-  }, [dispatch, filters]);
+    setIsFiltering(true);
+    const timeout = setTimeout(() => {
+      setIsFiltering(false);
+    }, 300);
+    
+    return () => clearTimeout(timeout);
+  }, [filters]);
+
+  // Calculate metrics from filtered data
+  const filteredMetrics = useCallback(() => {
+    const filtered = filteredData();
+    if (filtered.length === 0) {
+      return {
+        totalSales: 0,
+        totalRevenue: 0,
+        averageSalePrice: 0,
+        totalProfit: 0,
+        conversionRate: 0,
+        topSellingBrand: "",
+        topSellingModel: "",
+      };
+    }
+
+    const totalSales = filtered.length;
+    const totalRevenue = filtered.reduce((sum, item) => sum + item.salePrice, 0);
+    const averageSalePrice = totalRevenue / totalSales;
+    const totalProfit = filtered.reduce((sum, item) => sum + item.profit, 0);
+
+    // Find top selling brand
+    const brandCounts = filtered.reduce((acc, item) => {
+      acc[item.vehicle.brand] = (acc[item.vehicle.brand] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const topSellingBrand = Object.entries(brandCounts).sort(([,a], [,b]) => b - a)[0]?.[0] || "";
+
+    // Find top selling model
+    const modelCounts = filtered.reduce((acc, item) => {
+      acc[item.vehicle.model] = (acc[item.vehicle.model] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const topSellingModel = Object.entries(modelCounts).sort(([,a], [,b]) => b - a)[0]?.[0] || "";
+
+    return {
+      totalSales,
+      totalRevenue,
+      averageSalePrice,
+      totalProfit,
+      conversionRate: (totalSales / (totalSales + 50)) * 100, // Mock conversion rate
+      topSellingBrand,
+      topSellingModel,
+    };
+  }, [filteredData]);
+
+  // Initial data fetch only once when component mounts
+  useEffect(() => {
+    dispatch(fetchSalesData());
+  }, [dispatch]);
 
   const handleDrawerToggle = () => {
     setMobileDrawerOpen(!mobileDrawerOpen);
@@ -126,60 +220,71 @@ const Dashboard: React.FC = () => {
   };
 
   const renderAnalyticsContent = () => {
+    const filteredSalesData = filteredData();
+    const currentMetrics = filteredMetrics();
+    
+    // Show subtle filtering indicator
+    const contentStyle = {
+      position: 'relative' as const,
+      opacity: isFiltering ? 0.7 : 1,
+      transition: 'opacity 0.3s ease-in-out',
+      pointerEvents: isFiltering ? 'none' as const : 'auto' as const,
+    };
+    
     switch (selectedView) {
       case "overview":
         return (
-          <>
+          <Box sx={contentStyle}>
             <Box sx={{ mb: 3 }}>
-              <MetricsCards metrics={metrics} />
+              <MetricsCards metrics={currentMetrics} />
             </Box>
             <Box sx={{ mb: 3 }}>
-              <ChartsSection salesData={salesData} />
+              <ChartsSection salesData={filteredSalesData} />
             </Box>
             <Box sx={{ mb: 3 }}>
-              <DataTable salesData={salesData} />
+              <DataTable salesData={filteredSalesData} />
             </Box>
-          </>
+          </Box>
         );
       case "sales-trends":
         return (
-          <>
+          <Box sx={contentStyle}>
             <Box sx={{ mb: 3 }}>
-              <MetricsCards metrics={metrics} />
+              <MetricsCards metrics={currentMetrics} />
             </Box>
             <Box sx={{ mb: 3 }}>
-              <ChartsSection salesData={salesData} />
+              <ChartsSection salesData={filteredSalesData} />
             </Box>
-          </>
+          </Box>
         );
       case "performance":
         return (
-          <Box sx={{ mb: 3 }}>
-            <MetricsCards metrics={metrics} />
+          <Box sx={contentStyle}>
+            <MetricsCards metrics={currentMetrics} />
           </Box>
         );
       case "data-table":
         return (
-          <Box sx={{ mb: 3 }}>
-            <DataTable salesData={salesData} />
+          <Box sx={contentStyle}>
+            <DataTable salesData={filteredSalesData} />
           </Box>
         );
       case "detailed-charts":
         return (
-          <Box sx={{ mb: 3 }}>
-            <ChartsSection salesData={salesData} />
+          <Box sx={contentStyle}>
+            <ChartsSection salesData={filteredSalesData} />
           </Box>
         );
       default:
         return (
-          <>
+          <Box sx={contentStyle}>
             <Box sx={{ mb: 3 }}>
-              <MetricsCards metrics={metrics} />
+              <MetricsCards metrics={currentMetrics} />
             </Box>
             <Box sx={{ mb: 3 }}>
-              <ChartsSection salesData={salesData} />
+              <ChartsSection salesData={filteredSalesData} />
             </Box>
-          </>
+          </Box>
         );
     }
   };
