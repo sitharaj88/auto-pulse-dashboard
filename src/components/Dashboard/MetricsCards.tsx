@@ -88,9 +88,9 @@ const MetricsCards: React.FC<MetricsCardsProps> = ({ metrics }) => {
   ];
 
   return (
-    <Grid container spacing={{ xs: 2, sm: 3 }}>
+    <Grid container spacing={{ xs: 2, sm: 3, md: 3 }}>
       {metricsData.map((metric, index) => (
-        <Grid item xs={6} sm={4} md={4} lg={2} key={index}>
+        <Grid item xs={6} sm={4} md={4} lg={2} xl={2} key={index}>
           <MetricCard>
             <CardContent
               sx={{

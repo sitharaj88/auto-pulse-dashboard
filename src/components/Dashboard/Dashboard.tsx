@@ -21,40 +21,45 @@ import MetricsCards from "./MetricsCards";
 import ChartsSection from "./ChartsSection";
 import DataTable from "./DataTable";
 
-const DRAWER_WIDTH = 280;
 const COLLAPSED_DRAWER_WIDTH = 64;
+const EXPANDED_CONTENT_MARGIN = 0; // Main content margin when drawer is expanded
+
+const Root = styled("div")({
+  display: "flex",
+  minHeight: "100vh",
+  backgroundColor: "#f8fafc",
+});
 
 const Main = styled("main", {
-  shouldForwardProp: (prop) => prop !== "open" && prop !== "collapsed",
+  shouldForwardProp: (prop) => prop !== "collapsed",
 })<{
-  open?: boolean;
   collapsed?: boolean;
 }>(({ theme, collapsed }) => ({
   flexGrow: 1,
-  padding: theme.spacing(3),
+  overflow: "hidden",
   transition: theme.transitions.create("margin", {
     easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.enteringScreen,
+    duration: theme.transitions.duration.leavingScreen,
   }),
   marginLeft: 0,
   [theme.breakpoints.up("md")]: {
-    marginLeft: collapsed ? COLLAPSED_DRAWER_WIDTH : DRAWER_WIDTH,
+    marginLeft: collapsed ? EXPANDED_CONTENT_MARGIN : EXPANDED_CONTENT_MARGIN, // Uses 80px for overlay effect
+    transition: theme.transitions.create("margin", {
+      easing: theme.transitions.easing.easeOut,
+      duration: theme.transitions.duration.enteringScreen,
+    }),
   },
   [theme.breakpoints.down("md")]: {
     marginLeft: 0,
-    padding: theme.spacing(2),
   },
-  minHeight: "100vh",
-  backgroundColor: "transparent",
 }));
 
 const StyledAppBar = styled(AppBar, {
-  shouldForwardProp: (prop) => prop !== "collapsed" && prop !== "drawerOpen",
+  shouldForwardProp: (prop) => prop !== "collapsed",
 })<{
   collapsed?: boolean;
-  drawerOpen?: boolean;
 }>(({ theme, collapsed }) => ({
-  zIndex: theme.zIndex.drawer + 1,
+  zIndex: theme.zIndex.drawer + 1, // Back to normal z-index
   transition: theme.transitions.create(["width", "margin"], {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
@@ -64,10 +69,8 @@ const StyledAppBar = styled(AppBar, {
   backdropFilter: "blur(20px)",
   borderBottom: `1px solid ${theme.palette.divider}`,
   [theme.breakpoints.up("md")]: {
-    width: `calc(100% - ${
-      collapsed ? COLLAPSED_DRAWER_WIDTH : DRAWER_WIDTH
-    }px)`,
-    marginLeft: collapsed ? COLLAPSED_DRAWER_WIDTH : DRAWER_WIDTH,
+    width: collapsed ? "calc(100% - 64px)" : "calc(100% - 240px)", // Always leave space for drawer
+    marginLeft: collapsed ? 64 : 240, // Always have margin for drawer width
     transition: theme.transitions.create(["width", "margin"], {
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,
@@ -77,6 +80,19 @@ const StyledAppBar = styled(AppBar, {
     width: "100%",
     marginLeft: 0,
   },
+}));
+
+const ContentWrapper = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(3),
+  [theme.breakpoints.down("md")]: {
+    padding: theme.spacing(2),
+  },
+  [theme.breakpoints.down("sm")]: {
+    padding: theme.spacing(1),
+  },
+  width: "100%",
+  maxWidth: "100%",
+  overflow: "auto",
 }));
 
 const Dashboard: React.FC = () => {
@@ -192,9 +208,7 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <Box
-      sx={{ display: "flex", backgroundColor: "#f8fafc", minHeight: "100vh" }}
-    >
+    <Root>
       {/* App Bar */}
       <StyledAppBar position="fixed" collapsed={drawerCollapsed}>
         <Toolbar>
@@ -253,16 +267,20 @@ const Dashboard: React.FC = () => {
       {/* Main Content */}
       <Main collapsed={drawerCollapsed}>
         <Toolbar />
+        
+        <ContentWrapper>
+          <Container maxWidth={false} sx={{ p: 0 }}>
+            {/* Advanced Filters */}
+            <Box sx={{ mb: 3 }}>
+              <AdvancedFilters />
+            </Box>
 
-        <Container maxWidth="xl" sx={{ mt: 2 }}>
-          {/* Advanced Filters */}
-          <AdvancedFilters />
-
-          {/* Dynamic Content */}
-          {renderAnalyticsContent()}
-        </Container>
+            {/* Dynamic Content */}
+            {renderAnalyticsContent()}
+          </Container>
+        </ContentWrapper>
       </Main>
-    </Box>
+    </Root>
   );
 };
 

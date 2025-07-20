@@ -41,7 +41,7 @@ import { styled } from "@mui/material/styles";
 import { useAppSelector, useAppDispatch } from "../../store/hooks";
 import { logout } from "../../store/slices/authSlice";
 
-const DRAWER_WIDTH = 280;
+const DRAWER_WIDTH = 240; // Reduced from 280px to 240px for better space optimization
 const COLLAPSED_WIDTH = 64;
 
 const StyledDrawer = styled(Drawer, {
@@ -64,6 +64,7 @@ const StyledDrawer = styled(Drawer, {
     }),
     overflowX: collapsed ? "hidden" : "visible",
     boxSizing: "border-box",
+    zIndex: theme.zIndex.drawer,
   },
 }));
 
@@ -90,21 +91,24 @@ const UserProfileSection = styled(Box)(({ theme }) => ({
   marginBottom: theme.spacing(2),
 }));
 
-const StyledListItemButton = styled(ListItemButton)(({ theme }) => ({
+const StyledListItemButton = styled(ListItemButton, {
+  shouldForwardProp: (prop) => prop !== "collapsed",
+})<{ collapsed?: boolean }>(({ theme, collapsed }) => ({
   borderRadius: theme.spacing(1),
-  margin: `${theme.spacing(0.5)} ${theme.spacing(1)}`,
+  margin: collapsed ? `${theme.spacing(0.5)} ${theme.spacing(0.5)}` : `${theme.spacing(0.5)} ${theme.spacing(1)}`,
+  padding: collapsed ? theme.spacing(1) : theme.spacing(1, 2),
   "&:hover": {
     background: `linear-gradient(135deg, 
       ${theme.palette.primary.main}20 0%, 
       ${theme.palette.secondary.main}15 100%)`,
-    transform: "translateX(4px)",
+    transform: collapsed ? "none" : "translateX(4px)", // No transform when collapsed
     transition: "all 0.2s ease-in-out",
   },
   "&.Mui-selected": {
     background: `linear-gradient(135deg, 
       ${theme.palette.primary.main}30 0%, 
       ${theme.palette.secondary.main}20 100%)`,
-    borderLeft: `4px solid ${theme.palette.primary.main}`,
+    borderLeft: collapsed ? "none" : `4px solid ${theme.palette.primary.main}`,
     "&:hover": {
       background: `linear-gradient(135deg, 
         ${theme.palette.primary.main}35 0%, 
@@ -153,6 +157,8 @@ const SideDrawer: React.FC<SideDrawerProps> = ({
   const [expandedSections, setExpandedSections] = useState<string[]>([
     "analytics",
   ]);
+
+  console.log('SideDrawer render:', { isMobile, isMobileDetected, isMobileProp, collapsed });
 
   const menuSections: MenuSection[] = [
     {
@@ -238,6 +244,7 @@ const SideDrawer: React.FC<SideDrawerProps> = ({
 
   const handleToggleCollapsed = () => {
     const newCollapsed = !collapsed;
+    console.log('Toggling collapsed from', collapsed, 'to', newCollapsed, 'isMobile:', isMobile);
     setCollapsed(newCollapsed);
     if (onCollapse) {
       onCollapse(newCollapsed);
@@ -266,6 +273,7 @@ const SideDrawer: React.FC<SideDrawerProps> = ({
         <ListItem disablePadding>
           <StyledListItemButton
             selected={isSelected}
+            collapsed={collapsed}
             onClick={() => {
               if (hasChildren) {
                 handleSectionToggle(item.id);
@@ -278,16 +286,15 @@ const SideDrawer: React.FC<SideDrawerProps> = ({
             }}
             sx={{ pl: depth * 2 + 2 }}
           >
-            {!collapsed && (
-              <ListItemIcon
-                sx={{
-                  color: isSelected ? theme.palette.primary.main : "inherit",
-                  minWidth: 40,
-                }}
-              >
-                {item.icon}
-              </ListItemIcon>
-            )}
+            <ListItemIcon
+              sx={{
+                color: isSelected ? theme.palette.primary.main : "inherit",
+                minWidth: 40,
+                justifyContent: "center",
+              }}
+            >
+              {item.icon}
+            </ListItemIcon>
             {!collapsed && (
               <ListItemText
                 primary={item.label}
@@ -334,6 +341,7 @@ const SideDrawer: React.FC<SideDrawerProps> = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          minHeight: 72,
         }}
       >
         {!collapsed && (
@@ -356,9 +364,24 @@ const SideDrawer: React.FC<SideDrawerProps> = ({
             </Typography>
           </Box>
         )}
-        <IconButton onClick={handleToggleCollapsed} size="small">
-          {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-        </IconButton>
+        {!isMobile && (
+          <IconButton 
+            onClick={handleToggleCollapsed} 
+            size="small"
+            sx={{ 
+              color: theme.palette.primary.main,
+              backgroundColor: theme.palette.background.paper,
+              boxShadow: 1,
+              '&:hover': {
+                backgroundColor: theme.palette.primary.main + '20',
+                boxShadow: 2,
+              },
+              zIndex: 1000, // High enough to be visible
+            }}
+          >
+            {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+          </IconButton>
+        )}
       </Box>
 
       <Divider />
@@ -426,24 +449,24 @@ const SideDrawer: React.FC<SideDrawerProps> = ({
         <Divider />
         <List>
           <ListItem disablePadding>
-            <StyledListItemButton>
-              <ListItemIcon>
+            <StyledListItemButton collapsed={collapsed}>
+              <ListItemIcon sx={{ justifyContent: "center" }}>
                 <SettingsIcon />
               </ListItemIcon>
               {!collapsed && <ListItemText primary="Settings" />}
             </StyledListItemButton>
           </ListItem>
           <ListItem disablePadding>
-            <StyledListItemButton>
-              <ListItemIcon>
+            <StyledListItemButton collapsed={collapsed}>
+              <ListItemIcon sx={{ justifyContent: "center" }}>
                 <PersonIcon />
               </ListItemIcon>
               {!collapsed && <ListItemText primary="Profile" />}
             </StyledListItemButton>
           </ListItem>
           <ListItem disablePadding>
-            <StyledListItemButton onClick={handleLogout}>
-              <ListItemIcon sx={{ color: theme.palette.error.main }}>
+            <StyledListItemButton collapsed={collapsed} onClick={handleLogout}>
+              <ListItemIcon sx={{ color: theme.palette.error.main, justifyContent: "center" }}>
                 <LogoutIcon />
               </ListItemIcon>
               {!collapsed && (
@@ -460,6 +483,7 @@ const SideDrawer: React.FC<SideDrawerProps> = ({
   );
 
   if (isMobile) {
+    console.log('Rendering mobile drawer');
     return (
       <MobileDrawer
         variant="temporary"
@@ -467,7 +491,12 @@ const SideDrawer: React.FC<SideDrawerProps> = ({
         open={open}
         onClose={onClose}
         ModalProps={{
-          keepMounted: true, // Better open performance on mobile.
+          keepMounted: true,
+          BackdropProps: {
+            sx: {
+              backgroundColor: "transparent",
+            },
+          },
         }}
       >
         {drawerContent}
@@ -475,8 +504,13 @@ const SideDrawer: React.FC<SideDrawerProps> = ({
     );
   }
 
+  console.log('Rendering desktop drawer with collapsed:', collapsed);
   return (
-    <StyledDrawer variant="permanent" anchor="left" collapsed={collapsed}>
+    <StyledDrawer 
+      variant="permanent" 
+      anchor="left" 
+      collapsed={collapsed}
+    >
       {drawerContent}
     </StyledDrawer>
   );

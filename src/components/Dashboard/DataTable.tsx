@@ -82,65 +82,77 @@ const DataTable: React.FC<DataTableProps> = ({ salesData }) => {
   );
 
   return (
-    <Card>
-      <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+    <Card sx={{ width: "100%", overflow: "hidden" }}>
+      <CardContent sx={{ p: { xs: 1, sm: 2, md: 3 }, pb: { xs: 1, sm: 2, md: 3 } }}>
         <Typography
           variant="h6"
           gutterBottom
-          sx={{ fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
+          sx={{ 
+            fontSize: { xs: "1rem", sm: "1.1rem", md: "1.25rem" },
+            mb: { xs: 1, sm: 2, md: 3 }
+          }}
         >
           Recent Sales Transactions
         </Typography>
-        <TableContainer
-          sx={{
-            maxHeight: { xs: 400, sm: 500 },
-            overflowX: "auto",
-          }}
-        >
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Date</TableCell>
-                <TableCell>Vehicle</TableCell>
-                <TableCell
-                  sx={{
-                    display: { xs: "none", md: "table-cell" },
-                  }}
-                >
-                  Customer
-                </TableCell>
-                <TableCell
-                  sx={{
-                    display: { xs: "none", sm: "table-cell" },
-                  }}
-                >
-                  Sales Person
-                </TableCell>
-                <TableCell
-                  sx={{
-                    display: { xs: "none", lg: "table-cell" },
-                  }}
-                >
-                  Region
-                </TableCell>
-                <TableCell align="right">Sale Price</TableCell>
-                <TableCell
-                  sx={{
-                    display: { xs: "none", sm: "table-cell" },
-                  }}
-                >
-                  Payment
-                </TableCell>
-                <TableCell
-                  align="right"
-                  sx={{
-                    display: { xs: "none", md: "table-cell" },
-                  }}
-                >
-                  Profit
-                </TableCell>
-              </TableRow>
-            </TableHead>
+        <Box sx={{ width: "100%", overflowX: "auto" }}>
+          <TableContainer
+            sx={{
+              maxHeight: { xs: 400, sm: 500, md: 600 },
+              minWidth: { xs: 320, sm: 600, md: 800 },
+              '& .MuiTable-root': {
+                minWidth: { xs: 600, sm: 800, md: 1000 },
+              },
+            }}
+          >
+            <Table size="small" stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ minWidth: 80 }}>Date</TableCell>
+                  <TableCell sx={{ minWidth: 150 }}>Vehicle</TableCell>
+                  <TableCell
+                    sx={{
+                      display: { xs: "none", md: "table-cell" },
+                      minWidth: 120,
+                    }}
+                  >
+                    Customer
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      display: { xs: "none", sm: "table-cell" },
+                      minWidth: 100,
+                    }}
+                  >
+                    Sales Person
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      display: { xs: "none", lg: "table-cell" },
+                      minWidth: 80,
+                    }}
+                  >
+                    Region
+                  </TableCell>
+                  <TableCell align="right" sx={{ minWidth: 100 }}>Sale Price</TableCell>
+                  <TableCell
+                    sx={{
+                      display: { xs: "none", sm: "table-cell" },
+                      minWidth: 80,
+                    }}
+                  >
+                    Payment
+                  </TableCell>
+                  <TableCell
+                    align="right"
+                    sx={{
+                      display: { xs: "none", md: "table-cell" },
+                      minWidth: 80,
+                    }}
+                  >
+                    Profit
+                  </TableCell>
+                </TableRow>
+              </TableHead>
             <TableBody>
               {paginatedData.map((sale) => (
                 <TableRow key={sale.id} hover>
@@ -283,6 +295,7 @@ const DataTable: React.FC<DataTableProps> = ({ salesData }) => {
             </TableBody>
           </Table>
         </TableContainer>
+        </Box>
         <TablePagination
           component="div"
           count={salesData.length}
@@ -295,11 +308,17 @@ const DataTable: React.FC<DataTableProps> = ({ salesData }) => {
             "& .MuiTablePagination-toolbar": {
               flexDirection: { xs: "column", sm: "row" },
               gap: { xs: 1, sm: 0 },
+              minHeight: { xs: 80, sm: 52 },
+              px: { xs: 1, sm: 2 },
             },
             "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows":
               {
                 fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                margin: 0,
               },
+            "& .MuiTablePagination-actions": {
+              marginLeft: { xs: 0, sm: "auto" },
+            },
           }}
         />
       </CardContent>
